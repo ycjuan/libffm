@@ -1,0 +1,251 @@
+LIBFFM is a library for field-aware factorization machine. For the formulation
+it solves, please check:
+
+    http://www.csie.ntu.edu.tw/~r01922136/slides/ffm.pdf
+
+
+
+Table of Contents
+=================
+
+- Installation
+- Data Format
+- Command Line Usage
+- Examples
+- Library Usage
+- OpenMP
+
+
+
+Installation
+============
+
+LIBFFM is written in C++. It requires C++11 and OpenMP supports. If OpenMP is
+not available on your platform, please refer to section `OpenMP.' Currently,
+LIBFFM runs only on Unix-like systems. To compile, type `make' in the command
+line.
+
+
+
+Data Format
+===========
+
+The data format of LIBFFM is:
+
+<label> <field1>:<index1>:<value1> <field2>:<index2>:<value2> ...
+.
+.
+.
+
+`field' and `index' should be non-negative integers. See an example
+`bigdata.tr.txt.'
+
+
+
+Command Line Usage
+==================
+
+-   `ffm-train'
+
+    usage: ffm-train [options] training_set_file [model_file]
+
+    options:
+    -l <lambda>: set regularization parameter (default 0)
+    -k <factor>: set number of latent factors (default 4)
+    -t <iteration>: set number of iterations (default 15)
+    -r <eta>: set learning rate (default 0.1)
+    -s <nr_threads>: set number of threads (default 1)
+    -p <path>: set path to the validation set
+    --quiet: quiet model (no output)
+    --norm: do instance-wise normalization
+    --no-rand: disable random update
+
+    `--norm' helps you to do instance-wise normalization. When it is enabled,
+    you can simply assign `1' to `value' in the data.
+
+    By default, our algorithm randomly select an instance for update in each
+    inner iteration. On some datasets you may want to do update in the original
+    order. You can do it by using `--no-rand' together with `-s 1.'
+    
+
+-   `ffm-predict'
+
+    usage: ffm-predict test_file model_file output_file
+
+
+
+Examples
+========
+
+> ffm-train bigdata.tr.txt model
+
+train a model using the default parameters
+
+> ffm-train -l 0.001 -k 16 -t 30 -r 0.05 -s 4 bigdata.tr.txt model
+
+train a model using the following parameters:
+
+    regularization cost = 0.001
+    latent factors = 16
+    iterations = 30
+    learning rate = 0.05
+    threads = 4
+
+> ffm-train -p bigdata.te.txt bigdata.tr.txt model
+
+use bigdata.te.txt as validation set
+
+> ffm-train -v 5 bigdata.tr.txt
+
+do five fold cross validation
+
+> ffm-train --quiet bigdata.tr.txt
+
+do not print message to screen
+
+> ffm-predict bigdata.te.txt model output
+
+do prediction
+
+
+
+Library Usage
+=============
+
+These structures and functions are declared in the header file `ffm.h.' You
+need to #include `ffm.h' in your C/C++ source files and link your program with
+`ffm.cpp.' You can see `ffm-train.cpp' and `ffm-predict.cpp' for examples
+showing how to use them.
+
+
+There are four public data structures in LIBFFM.
+
+
+-   struct ffm_node
+    {
+        ffm_int f;    // field index
+        ffm_int j;    // column index
+        ffm_float v;  // value
+    };
+
+    Each `ffm_node' represents a non-zero element in a sparse matrix.
+
+-   struct ffm_problem
+    {
+        ffm_int n;      // number of features
+        ffm_int l;      // number of instances
+        ffm_int m;      // number of fields
+        ffm_node *X;    // non-zero elements
+        ffm_long *P;    // row pointers
+        ffm_float *Y;   // labels
+    };
+
+-   struct ffm_parameter
+    {
+        ffm_float eta;
+        ffm_float lambda;
+        ffm_int nr_iters;
+        ffm_int k;
+        ffm_int nr_threads;
+        bool quiet;
+        bool normalization;
+        bool random;
+    };
+
+    `ffm_parameter' represents the parameters used for training. The meaning of
+    each variable is:
+
+    variable         meaning                             default
+    ============================================================
+    eta              learning rate                           0.1
+    lambda           regularization cost                       0
+    nr_iters         number of iterations                     15
+    k                number of latent factors                  4
+    nr_threads       number of threads used                    1
+    quiet            no outputs to stdout                  false
+    normalization    instance-wise normalization           false
+    raondom          randomly select instance in SG         true
+
+    To obtain a parameter object with default values, use the function
+    `ffm_get_default_param.'
+
+
+-   struct ffm_model
+    {
+        ffm_int n;              // number of features
+        ffm_int m;              // number of fields
+        ffm_int k;              // number of latent factors
+        ffm_float *W;           // store model values
+        bool normalization;     // do instance-wise normalization
+    };
+
+
+
+Functions available in LIBFFM include:
+
+
+-   ffm_parameter ffm_get_default_param();
+
+    Get default parameters.
+
+-   ffm_int ffm_save_model(struct ffm_model const *model, char const *path);
+    
+    Save a model. It returns 0 on sucess and 1 on failure.
+
+-   struct ffm_model* ffm_load_model(char const *path);
+
+    Load a model. If the model could not be loaded, a nullptr is returned.
+
+-   void ffm_destroy_model(struct ffm_model **model);
+    
+    Destroy a model.
+
+-   struct ffm_model* ffm_train(
+        struct ffm_problem const *prob, 
+        ffm_parameter param);
+
+    Train a model.
+
+-   struct ffm_model* ffm_train_with_validation(
+        struct ffm_problem const *Tr, 
+        struct ffm_problem const *Va, 
+        ffm_parameter param);
+
+    Train a model with training set `Tr' and validation set `Va.' The logloss
+    of the validation set is printed at each iteration.
+    
+-   ffm_float ffm_cross_validation(
+        struct ffm_problem const *prob, 
+        ffm_int nr_folds, 
+        ffm_parameter param);
+
+    Do cross validation with `nr_folds' folds.
+
+-   ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model);
+
+    Do prediction. `begin' and `end' are pointers to specify the beginning and
+    ending position of the instance to be predicted.
+
+
+
+OpenMP
+======
+
+We use OpenMP to do parallelization. If OpenMP is not available on your
+platform, then please comment out the following lines in Makefile.
+
+    DFLAG += -DUSEOMP
+    CXXFLAGS += -fopenmp
+
+Note: Please always run `make clean all' if these flags are changed.
+
+
+
+Contributors
+============
+
+Yu-Chin Juan, Wei-Sheng Chin, and Yong Zhuang
+
+For any questions, comments, or bug report, please send your email to 
+
+    Yu-Chin (guestwalk@gmail.com)
