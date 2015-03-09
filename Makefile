@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -Wall -O3 -std=c++0x -march=native
 
-# uncomment the following flags if you do not want to use OpenMP
+# comment the following flags if you do not want to use OpenMP
 DFLAG += -DUSEOMP
 CXXFLAGS += -fopenmp
 

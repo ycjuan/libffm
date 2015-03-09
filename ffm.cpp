@@ -1,11 +1,13 @@
+#include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include <stdexcept>
-#include <algorithm>
 #include <new>
 #include <memory>
-#include <cmath>
+#include <random>
+#include <stdexcept>
+#include <string>
 #include <vector>
 #include <pmmintrin.h>
 
@@ -129,10 +131,15 @@ ffm_float* malloc_aligned_float(ffm_long size)
 {
     void *ptr;
 
+#ifdef _WIN32
+    ptr = _aligned_malloc(size*sizeof(ffm_float), kALIGNByte);
+    if(ptr == nullptr)
+        throw bad_alloc();
+#else
     int status = posix_memalign(&ptr, kALIGNByte, size*sizeof(ffm_float));
-
     if(status != 0)
         throw bad_alloc();
+#endif
     
     return (ffm_float*)ptr;
 }
@@ -161,12 +168,15 @@ ffm_model* init_model(ffm_int n, ffm_int m, ffm_parameter param)
     ffm_float coef = 0.5/sqrt(param.k);
     ffm_float *w = model->W;
 
+    default_random_engine generator;
+    uniform_real_distribution<ffm_float> distribution(0.0, 1.0);
+
     for(ffm_int j = 0; j < model->n; j++)
     {
         for(ffm_int f = 0; f < model->m; f++)
         {
             for(ffm_int d = 0; d < param.k; d++, w++)
-                *w = coef*drand48();
+                *w = coef*distribution(generator);
             for(ffm_int d = param.k; d < k_aligned; d++, w++)
                 *w = 0;
             for(ffm_int d = k_aligned; d < 2*k_aligned; d++, w++)
@@ -401,7 +411,11 @@ void ffm_destroy_model(ffm_model **model)
 {
     if(model == nullptr || *model == nullptr)
         return;
+#ifdef _WIN32
+    _aligned_free((*model)->W);
+#else
     free((*model)->W);
+#endif
     delete *model;
     *model = nullptr;
 }

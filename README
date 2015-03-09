@@ -14,17 +14,22 @@ Table of Contents
 - Examples
 - Library Usage
 - OpenMP
+- Building Windows Binaries
 
 
 
 Installation
 ============
 
+Requirement:
 LIBFFM is written in C++. It requires C++11 and OpenMP supports. If OpenMP is
-not available on your platform, please refer to section `OpenMP.' Currently,
-LIBFFM runs only on Unix-like systems. To compile, type `make' in the command
-line.
+not available on your platform, please refer to section `OpenMP.' 
 
+- Unix-like system:
+  To compile on Unix-like systems, type `make' in the command line.
+
+- Windows:
+  See `Building Windows Binaries' to compile.
 
 
 Data Format
@@ -238,6 +243,25 @@ platform, then please comment out the following lines in Makefile.
     CXXFLAGS += -fopenmp
 
 Note: Please always run `make clean all' if these flags are changed.
+
+
+Building Windows Binaries
+=========================
+
+To build them via command-line tools of Visual C++, use the following steps:
+
+1. Open a DOS command box (or Developer Command Prompt for Visual Studio) and
+go to LIBFFM directory. If environment variables of VC++ have not been set,
+type
+
+"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\amd64\vcvars64.bat"
+
+You may have to modify the above command according which version of VC++ or
+where it is installed.
+
+2. Type
+
+nmake -f Makefile.win clean all
 
 
 

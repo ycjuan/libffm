@@ -1,0 +1,23 @@
+CXX = cl.exe
+CFLAGS = /nologo /O2 /EHsc /D "_CRT_SECURE_NO_DEPRECATE" /D "USEOMP" /openmp
+
+TARGET = windows
+
+all: $(TARGET) $(TARGET)\ffm-train.exe $(TARGET)\ffm-predict.exe
+
+$(TARGET)\ffm-predict.exe: ffm.h ffm-predict.cpp ffm.obj
+	$(CXX) $(CFLAGS) ffm-predict.cpp ffm.obj -Fe$(TARGET)\ffm-predict.exe
+
+$(TARGET)\ffm-train.exe: ffm.h ffm-train.cpp ffm.obj
+	$(CXX) $(CFLAGS) ffm-train.cpp ffm.obj -Fe$(TARGET)\ffm-train.exe
+
+ffm.obj: ffm.cpp ffm.h
+	$(CXX) $(CFLAGS) -c ffm.cpp
+
+.PHONY: $(TARGET)
+$(TARGET):
+	-mkdir $(TARGET)
+
+clean:
+	-erase /Q *.obj *.exe $(TARGET)\. 
+	-rd $(TARGET)

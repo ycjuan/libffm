@@ -1,6 +1,8 @@
+#include <algorithm>
+#include <cstring>
 #include <iostream>
 #include <stdexcept>
-#include <cstring>
+#include <string>
 #include <vector>
 
 #include "ffm.h"
