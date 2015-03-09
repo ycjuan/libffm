@@ -203,7 +203,7 @@ vector<ffm_float> normalize(ffm_problem &prob)
         ffm_float norm = 0;
         for(ffm_long p = prob.P[i]; p < prob.P[i+1]; p++)
             norm += prob.X[p].v*prob.X[p].v;
-        R[i] = 1/sqrt(norm);
+        R[i] = 1/norm;
     }
 
     return R;
@@ -548,7 +548,7 @@ ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model)
         r = 0;
         for(ffm_node *N = begin; N != end; N++)
             r += N->v*N->v; 
-        r = 1/sqrt(r);
+        r = 1/r;
     }
 
     ffm_long align0 = (ffm_long)model->k;
