@@ -56,7 +56,7 @@ inline ffm_float wTx(
             ffm_int j2 = N2->j;
             ffm_int f2 = N2->f;
             ffm_float v2 = N2->v;
-            if(j2 >= model.n || f2 >= model.m || f1 == f2)
+            if(j2 >= model.n || f2 >= model.m)
                 continue;
 
             ffm_float *w1 = model.W + j1*align1 + f2*align0;
