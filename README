@@ -61,9 +61,11 @@ Command Line Usage
     -r <eta>: set learning rate (default 0.1)
     -s <nr_threads>: set number of threads (default 1)
     -p <path>: set path to the validation set
+    -v <fold>: set the number of folds for cross-validation
     --quiet: quiet model (no output)
     --norm: do instance-wise normalization
     --no-rand: disable random update
+    --on-disk: perform on-disk training
 
     `--norm' helps you to do instance-wise normalization. When it is enabled,
     you can simply assign `1' to `value' in the data.
@@ -71,6 +73,17 @@ Command Line Usage
     By default, our algorithm randomly select an instance for update in each
     inner iteration. On some datasets you may want to do update in the original
     order. You can do it by using `--no-rand' together with `-s 1.'
+
+    If you do not have enough memory, then you can use `--on-disk' to do
+    disk-level training. Two restrictions when you use this mode:
+        
+        1. So far we do not allow random update in the mode, so please use
+           `--no-rand' if you want to do on-disk training. 
+           
+        2. Cross-validation in this mode is not yet supported.
+
+    A binary file `training_set_file.bin' will be generated to store the data
+    in binary format.
     
 
 -   `ffm-predict'
@@ -112,6 +125,9 @@ do not print message to screen
 
 do prediction
 
+> ffm-train --no-rand --on-disk bigdata.tr.txt
+
+perform on-disk training
 
 
 Library Usage

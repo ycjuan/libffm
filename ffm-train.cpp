@@ -1,3 +1,4 @@
+#pragma GCC diagnostic ignored "-Wunused-result" 
 #include <algorithm>
 #include <cstring>
 #include <iostream>
@@ -22,19 +23,31 @@ string train_help()
 "-r <eta>: set learning rate (default 0.1)\n"
 "-s <nr_threads>: set number of threads (default 1)\n"
 "-p <path>: set path to the validation set\n"
+"-v <fold>: set the number of folds for cross-validation\n"
 "--quiet: quiet model (no output)\n"
 "--norm: do instance-wise normalization\n"
-"--no-rand: disable random update\n");
+"--no-rand: disable random update\n"
+"--on-disk: perform on-disk training\n");
 }
 
 struct Option
 {
-    Option() : param(ffm_get_default_param()), nr_folds(1), do_cv(false) {}
+    Option() : param(ffm_get_default_param()), nr_folds(1), do_cv(false), on_disk(false) {}
     string tr_path, va_path, model_path;
     ffm_parameter param;
     ffm_int nr_folds;
-    bool do_cv;
+    bool do_cv, on_disk;
 };
+
+string basename(string path)
+{
+    const char *ptr = strrchr(&*path.begin(), '/');
+    if(!ptr)
+        ptr = path.c_str();
+    else
+        ptr++;
+    return string(ptr);
+}
 
 Option parse_option(int argc, char **argv)
 {
@@ -124,6 +137,10 @@ Option parse_option(int argc, char **argv)
         {
             opt.param.random = false;
         }
+        else if(args[i].compare("--on-disk") == 0)
+        {
+            opt.on_disk = true;
+        }
         else
         {
             break;
@@ -142,12 +159,7 @@ Option parse_option(int argc, char **argv)
     }
     else if(i == argc)
     {
-        const char *ptr = strrchr(&*opt.tr_path.begin(), '/');
-        if(!ptr)
-            ptr = opt.tr_path.c_str();
-        else
-            ++ptr;
-        opt.model_path = string(ptr) + ".model";
+        opt.model_path = basename(opt.tr_path) + ".model";
     }
     else
     {
@@ -157,86 +169,81 @@ Option parse_option(int argc, char **argv)
     return opt;
 }
 
-ffm_problem read_problem(string path)
+int train(Option opt)
 {
-    int const kMaxLineSize = 1000000;
-
-    ffm_problem prob;
-    prob.l = 0;
-    prob.n = 0;
-    prob.m = 0;
-    prob.X = nullptr;
-    prob.P = nullptr;
-    prob.Y = nullptr;
-
-    if(path.empty())
-        return prob;
-
-    FILE *f = fopen(path.c_str(), "r");
-    if(f == nullptr)
-        throw runtime_error("cannot open " + path);
-
-    char line[kMaxLineSize];
-
-    ffm_long nnz = 0;
-    for(ffm_int i = 0; fgets(line, kMaxLineSize, f) != nullptr; i++, prob.l++)
+    ffm_problem *tr = ffm_read_problem(opt.tr_path.c_str());
+    if(tr == nullptr)
     {
-        strtok(line, " \t");
-        for(; ; nnz++)
-        {
-            char *field_char = strtok(nullptr,":");
-            strtok(nullptr,":");
-            strtok(nullptr," \t");
-            if(field_char == nullptr || *field_char == '\n')
-                break;
-        }
-    }
-    rewind(f);
-
-    prob.X = new ffm_node[nnz];
-    prob.P = new ffm_long[prob.l+1];
-    prob.Y = new ffm_float[prob.l];
-
-    ffm_long p = 0;
-    prob.P[0] = 0;
-    for(ffm_int i = 0; fgets(line, kMaxLineSize, f) != nullptr; i++)
-    {
-        char *y_char = strtok(line, " \t");
-        ffm_float y = (atoi(y_char)>0)? 1.0f : -1.0f;
-        prob.Y[i] = y;
-
-        for(; ; ++p)
-        {
-            char *field_char = strtok(nullptr,":");
-            char *idx_char = strtok(nullptr,":");
-            char *value_char = strtok(nullptr," \t");
-            if(field_char == nullptr || *field_char == '\n')
-                break;
-
-            ffm_int field = atoi(field_char);
-            ffm_int idx = atoi(idx_char);
-            ffm_float value = atof(value_char);
-
-            prob.m = max(prob.m, field+1);
-            prob.n = max(prob.n, idx+1);
-            
-            prob.X[p].f = field;
-            prob.X[p].j = idx;
-            prob.X[p].v = value;
-        }
-        prob.P[i+1] = p;
+        cerr << "cannot load " << opt.tr_path << endl << flush;
+        return 1;
     }
 
-    fclose(f);
+    ffm_problem *va = nullptr;
+    if(!opt.va_path.empty())
+    {
+        va = ffm_read_problem(opt.va_path.c_str());
+        if(va == nullptr)
+        {
+            ffm_destroy_problem(&tr);
+            cerr << "cannot load " << opt.va_path << endl << flush;
+            return 1;
+        }
+    }
 
-    return prob;
+    int status = 0;
+    if(opt.do_cv)
+    {
+        ffm_cross_validation(tr, opt.nr_folds, opt.param);
+    }
+    else
+    {
+        ffm_model *model = ffm_train_with_validation(tr, va, opt.param);
+
+        status = ffm_save_model(model, opt.model_path.c_str());
+
+        ffm_destroy_model(&model);
+    }
+
+    ffm_destroy_problem(&tr);
+    ffm_destroy_problem(&va);
+
+    return status;
 }
 
-void destroy_problem(ffm_problem &prob)
+int train_on_disk(Option opt)
 {
-    delete[] prob.X;
-    delete[] prob.P;
-    delete[] prob.Y;
+    if(opt.param.random)
+    {
+        cout << "Random update is not allowed in disk-level training. Please use `--no-rand' to disable." << endl;
+        return 1;
+    }
+
+    if(opt.do_cv)
+    {
+        cout << "Cross-validation is not yet implemented in disk-level training." << endl;
+        return 1;
+    }
+
+    string tr_bin_path = basename(opt.tr_path) + ".bin";
+    string va_bin_path = opt.va_path.empty()? "" : basename(opt.va_path) + ".bin";
+
+    ffm_read_problem_to_disk(opt.tr_path.c_str(), tr_bin_path.c_str());
+    if(!opt.va_path.empty())
+        ffm_read_problem_to_disk(opt.va_path.c_str(), va_bin_path.c_str());
+
+    ffm_model *model = ffm_train_with_validation_on_disk(tr_bin_path.c_str(), va_bin_path.c_str(), opt.param);
+
+    ffm_int status = ffm_save_model(model, opt.model_path.c_str());
+    if(status != 0)
+    {
+        ffm_destroy_model(&model);
+
+        return 1;
+    }
+
+    ffm_destroy_model(&model);
+
+    return 0;
 }
 
 int main(int argc, char **argv)
@@ -252,41 +259,12 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    ffm_problem tr, va;
-    try
+    if(opt.on_disk)
     {
-        tr = read_problem(opt.tr_path);
-        va = read_problem(opt.va_path);
-    }
-    catch(runtime_error &e)
-    {
-        cout << e.what() << endl;
-        return 1;
-    }
-
-    if(opt.do_cv)
-    {
-        ffm_cross_validation(&tr, opt.nr_folds, opt.param);
+        return train_on_disk(opt);
     }
     else
     {
-        ffm_model *model = train_with_validation(&tr, &va, opt.param);
-
-        ffm_int status = ffm_save_model(model, opt.model_path.c_str());
-        if(status != 0)
-        {
-            destroy_problem(tr);
-            destroy_problem(va);
-            ffm_destroy_model(&model);
-
-            return 1;
-        }
-
-        ffm_destroy_model(&model);
+        return train(opt);
     }
-
-    destroy_problem(tr);
-    destroy_problem(va);
-
-    return 0;
 }
