@@ -7,6 +7,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <vector>
+#include <cstdlib>
 
 #include "ffm.h"
 

@@ -25,8 +25,14 @@ Requirement:
 LIBFFM is written in C++. It requires C++11 and OpenMP supports. If OpenMP is
 not available on your platform, please refer to section `OpenMP.' 
 
-- Unix-like system:
+- Unix-like systems:
   To compile on Unix-like systems, type `make' in the command line.
+
+- OS X:
+
+  The built-in compiler should be able to compile LIBFFM. However, OpenMP may
+  not be supported. In this case you have to compile without OpenMP. See
+  section `OpenMP' for detail.
 
 - Windows:
   See `Building Windows Binaries' to compile.
@@ -63,13 +69,14 @@ Command Line Usage
     -p <path>: set path to the validation set
     -v <fold>: set the number of folds for cross-validation
     --quiet: quiet model (no output)
-    --norm: do instance-wise normalization
+    --no-norm: disable instance-wise normalization
     --no-rand: disable random update
-    --on-disk: perform on-disk training
+    --on-disk: perform on-disk training (a temporary file <training_set_file>.bin will be generated)
 
-    `--norm' helps you to do instance-wise normalization. When it is enabled,
-    you can simply assign `1' to `value' in the data.
-
+    By default we do instance-wise normalization. That is, we normalize the
+    2-norm of each instance to 1. You can use `--no-norm' to disable this
+    function.
+    
     By default, our algorithm randomly select an instance for update in each
     inner iteration. On some datasets you may want to do update in the original
     order. You can do it by using `--no-rand' together with `-s 1.'

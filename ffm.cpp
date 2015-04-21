@@ -197,8 +197,8 @@ void shrink_model(ffm_model &model, ffm_int k_new)
     {
         for(ffm_int f = 0; f < model.m; f++)
         {
-            ffm_float *src = model.W + (j*model.m+f)*model.k*2;
-            ffm_float *dst = model.W + (j*model.m+f)*k_new;
+            ffm_float *src = model.W + ((ffm_long)j*model.m+f)*model.k*2;
+            ffm_float *dst = model.W + ((ffm_long)j*model.m+f)*k_new;
             copy(src, src+k_new, dst);
         }
     }
@@ -543,8 +543,6 @@ ffm_problem* ffm_read_problem(char const *path)
     prob->P = nullptr;
     prob->Y = nullptr;
 
-    int const kMaxLineSize = 1000000;
-
     char line[kMaxLineSize];
 
     ffm_long nnz = 0;
@@ -609,7 +607,7 @@ int ffm_read_problem_to_disk(char const *txt_path, char const *bin_path)
     if(f_bin == nullptr)
         return 1;
 
-    vector<char> line(1000000);
+    vector<char> line(kMaxLineSize);
 
     ffm_int m = 0;
     ffm_int n = 0;
@@ -648,7 +646,7 @@ int ffm_read_problem_to_disk(char const *txt_path, char const *bin_path)
     fwrite(&max_l, sizeof(ffm_int), 1, f_bin);
     fwrite(&max_nnz, sizeof(ffm_long), 1, f_bin);
 
-    while(fgets(line.data(), 1000000, f_txt))
+    while(fgets(line.data(), kMaxLineSize, f_txt))
     {
         char *y_char = strtok(line.data(), " \t");
 
@@ -797,7 +795,7 @@ ffm_parameter ffm_get_default_param()
     param.k = 4;
     param.nr_threads = 1;
     param.quiet = false;
-    param.normalization = false;
+    param.normalization = true;
     param.random = true;
 
     return param;

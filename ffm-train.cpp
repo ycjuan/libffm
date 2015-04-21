@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <cstdlib>
 
 #include "ffm.h"
 
@@ -25,9 +26,9 @@ string train_help()
 "-p <path>: set path to the validation set\n"
 "-v <fold>: set the number of folds for cross-validation\n"
 "--quiet: quiet model (no output)\n"
-"--norm: do instance-wise normalization\n"
+"--no-norm: disable instance-wise normalization\n"
 "--no-rand: disable random update\n"
-"--on-disk: perform on-disk training\n");
+"--on-disk: perform on-disk training (a temporary file <training_set_file>.bin will be generated)\n");
 }
 
 struct Option
@@ -68,7 +69,7 @@ Option parse_option(int argc, char **argv)
             if(i == argc-1)
                 throw invalid_argument("need to specify number of iterations after -t");
             i++;
-            opt.param.nr_iters = stoi(args[i]);
+            opt.param.nr_iters = atoi(args[i].c_str());
             if(opt.param.nr_iters <= 0)
                 throw invalid_argument("number of iterations should be greater than zero");
         }
@@ -77,7 +78,7 @@ Option parse_option(int argc, char **argv)
             if(i == argc-1)
                 throw invalid_argument("need to specify number of factors after -k");
             i++;
-            opt.param.k = stoi(args[i]);
+            opt.param.k = atoi(args[i].c_str());
             if(opt.param.k <= 0)
                 throw invalid_argument("number of factors should be greater than zero");
         }
@@ -86,7 +87,7 @@ Option parse_option(int argc, char **argv)
             if(i == argc-1)
                 throw invalid_argument("need to specify eta after -r");
             i++;
-            opt.param.eta = stof(args[i]);
+            opt.param.eta = atof(args[i].c_str());
             if(opt.param.eta <= 0)
                 throw invalid_argument("learning rate should be greater than zero");
         }
@@ -95,7 +96,7 @@ Option parse_option(int argc, char **argv)
             if(i == argc-1)
                 throw invalid_argument("need to specify lambda after -l");
             i++;
-            opt.param.lambda = stof(args[i]);
+            opt.param.lambda = atof(args[i].c_str());
             if(opt.param.lambda < 0)
                 throw invalid_argument("regularization cost should not be smaller than zero");
         }
@@ -104,7 +105,7 @@ Option parse_option(int argc, char **argv)
             if(i == argc-1)
                 throw invalid_argument("need to specify number of threads after -s");
             i++;
-            opt.param.nr_threads = stoi(args[i]);
+            opt.param.nr_threads = atoi(args[i].c_str());
             if(opt.param.nr_threads <= 0)
                 throw invalid_argument("number of threads should be greater than zero");
         }
@@ -113,7 +114,7 @@ Option parse_option(int argc, char **argv)
             if(i == argc-1)
                 throw invalid_argument("need to specify number of folds after -v");
             i++;
-            opt.nr_folds = stoi(args[i]);
+            opt.nr_folds = atoi(args[i].c_str());
             if(opt.nr_folds <= 1)
                 throw invalid_argument("number of folds should be greater than one");
             opt.do_cv = true;
@@ -125,9 +126,9 @@ Option parse_option(int argc, char **argv)
             i++;
             opt.va_path = args[i];
         }
-        else if(args[i].compare("--norm") == 0)
+        else if(args[i].compare("--no-norm") == 0)
         {
-            opt.param.normalization= true;
+            opt.param.normalization = false;
         }
         else if(args[i].compare("--quiet") == 0)
         {
