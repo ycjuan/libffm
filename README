@@ -1,5 +1,4 @@
-LIBFFM is a library for field-aware factorization machine. For the formulation
-it solves, please check:
+LIBFFM is a library for field-aware factorization machine. For the formulation it solves, please check:
 
     http://www.csie.ntu.edu.tw/~r01922136/slides/ffm.pdf
 
@@ -8,6 +7,7 @@ it solves, please check:
 Table of Contents
 =================
 
+- Overfitting and Early Stopping
 - Installation
 - Data Format
 - Command Line Usage
@@ -18,24 +18,80 @@ Table of Contents
 
 
 
+Overfitting and Early Stopping
+==============================
+
+FFM is prone to overfitting, and the solution we have so far is early stopping. See how FFM behaves on a certain data
+set:
+
+    > ffm-train -p va.ffm -l 0.00002 tr.ffm
+    iter   tr_logloss   va_logloss
+       1      0.49738      0.48776
+       2      0.47383      0.47995
+       3      0.46366      0.47480
+       4      0.45561      0.47231
+       5      0.44810      0.47034
+       6      0.44037      0.47003
+       7      0.43239      0.46952
+       8      0.42362      0.46999
+       9      0.41394      0.47088
+      10      0.40326      0.47228
+      11      0.39156      0.47435
+      12      0.37886      0.47683
+      13      0.36522      0.47975
+      14      0.35079      0.48321
+      15      0.33578      0.48703
+
+
+We see the best validation loss is achieved at 7th iteration. If we keep training, then overfitting begins. It is worth
+noting that increasing regularization parameter do not help:
+
+    > ffm-train -p va.ffm -l 0.0002 -t 50 -s 12 tr.ffm
+    iter   tr_logloss   va_logloss
+       1      0.50532      0.49905
+       2      0.48782      0.49242
+       3      0.48136      0.48748
+                 ...
+      29      0.42183      0.47014
+                 ...
+      48      0.37071      0.47333
+      49      0.36767      0.47374
+      50      0.36472      0.47404
+
+
+To avoid overfitting, we recommend always provide a validation set with option `-p.' You can use option `--auto-stop' to
+stop at the iteration that reaches the best validation loss:
+
+    > ffm-train -p va.ffm -l 0.00002 --auto-stop tr.ffm
+    iter   tr_logloss   va_logloss
+       1      0.49738      0.48776
+       2      0.47383      0.47995
+       3      0.46366      0.47480
+       4      0.45561      0.47231
+       5      0.44810      0.47034
+       6      0.44037      0.47003
+       7      0.43239      0.46952
+       8      0.42362      0.46999
+    Auto-stop. Use model at 7th iteration.
+
+
 Installation
 ============
 
-Requirement:
-LIBFFM is written in C++. It requires C++11 and OpenMP supports. If OpenMP is
-not available on your platform, please refer to section `OpenMP.' 
+Requirement: LIBFFM is written in C++. It requires C++11 and OpenMP supports. If OpenMP is not available on your
+platform, please refer to section `OpenMP.' 
 
 - Unix-like systems:
   To compile on Unix-like systems, type `make' in the command line.
 
 - OS X:
-
   The built-in compiler should be able to compile LIBFFM. However, OpenMP may
   not be supported. In this case you have to compile without OpenMP. See
   section `OpenMP' for detail.
 
 - Windows:
   See `Building Windows Binaries' to compile.
+
 
 
 Data Format
@@ -61,10 +117,10 @@ Command Line Usage
     usage: ffm-train [options] training_set_file [model_file]
 
     options:
-    -l <lambda>: set regularization parameter (default 0)
+    -l <lambda>: set regularization parameter (default 0.00002)
     -k <factor>: set number of latent factors (default 4)
     -t <iteration>: set number of iterations (default 15)
-    -r <eta>: set learning rate (default 0.1)
+    -r <eta>: set learning rate (default 0.2)
     -s <nr_threads>: set number of threads (default 1)
     -p <path>: set path to the validation set
     -v <fold>: set the number of folds for cross-validation
@@ -72,26 +128,28 @@ Command Line Usage
     --no-norm: disable instance-wise normalization
     --no-rand: disable random update
     --on-disk: perform on-disk training (a temporary file <training_set_file>.bin will be generated)
+    --auto-stop: stop at the iteration that achieves the best validation loss (must be used with -p)
 
-    By default we do instance-wise normalization. That is, we normalize the
-    2-norm of each instance to 1. You can use `--no-norm' to disable this
-    function.
+    By default we do instance-wise normalization. That is, we normalize the 2-norm of each instance to 1. You can use
+    `--no-norm' to disable this function.
     
-    By default, our algorithm randomly select an instance for update in each
-    inner iteration. On some datasets you may want to do update in the original
-    order. You can do it by using `--no-rand' together with `-s 1.'
+    By default, our algorithm randomly select an instance for update in each inner iteration. On some datasets you may
+    want to do update in the original order. You can do it by using `--no-rand' together with `-s 1.'
 
-    If you do not have enough memory, then you can use `--on-disk' to do
-    disk-level training. Two restrictions when you use this mode:
+    If you do not have enough memory, then you can use `--on-disk' to do disk-level training. Two restrictions when you
+    use this mode:
         
         1. So far we do not allow random update in the mode, so please use
            `--no-rand' if you want to do on-disk training. 
            
         2. Cross-validation in this mode is not yet supported.
 
-    A binary file `training_set_file.bin' will be generated to store the data
-    in binary format.
-    
+    A binary file `training_set_file.bin' will be generated to store the data in binary format.
+
+    Because FFM usually need early stopping for better test performance, we provide an option `--auto-stop' to stop at
+    the iteration that achieves the best validation loss. Note that you need to provide a validation set with `-p' when
+    you use this option.
+
 
 -   `ffm-predict'
 
@@ -136,15 +194,16 @@ do prediction
 
 perform on-disk training
 
+> ffm-train -p bigdata.te.txt -t 100 --auto-stop bigdata.tr.txt
+
+use auto-stop to stop at the best iteration according to validation loss
 
 Library Usage
 =============
 
-These structures and functions are declared in the header file `ffm.h.' You
-need to #include `ffm.h' in your C/C++ source files and link your program with
-`ffm.cpp.' You can see `ffm-train.cpp' and `ffm-predict.cpp' for examples
+These structures and functions are declared in the header file `ffm.h.' You need to #include `ffm.h' in your C/C++
+source files and link your program with `ffm.cpp.' You can see `ffm-train.cpp' and `ffm-predict.cpp' for examples
 showing how to use them.
-
 
 There are four public data structures in LIBFFM.
 
@@ -178,6 +237,7 @@ There are four public data structures in LIBFFM.
         bool quiet;
         bool normalization;
         bool random;
+        bool auto_stop;
     };
 
     `ffm_parameter' represents the parameters used for training. The meaning of
@@ -192,7 +252,8 @@ There are four public data structures in LIBFFM.
     nr_threads       number of threads used                    1
     quiet            no outputs to stdout                  false
     normalization    instance-wise normalization           false
-    raondom          randomly select instance in SG         true
+    random           randomly select instance in SG         true
+    auto_stop        auto stop at the best iteration       false
 
     To obtain a parameter object with default values, use the function
     `ffm_get_default_param.'
@@ -228,31 +289,23 @@ Functions available in LIBFFM include:
     
     Destroy a model.
 
--   struct ffm_model* ffm_train(
-        struct ffm_problem const *prob, 
-        ffm_parameter param);
+-   struct ffm_model* ffm_train(struct ffm_problem const *prob, ffm_parameter param);
 
     Train a model.
 
--   struct ffm_model* ffm_train_with_validation(
-        struct ffm_problem const *Tr, 
-        struct ffm_problem const *Va, 
-        ffm_parameter param);
+-   struct ffm_model* ffm_train_with_validation(struct ffm_problem const *Tr, struct ffm_problem const *Va, ffm_parameter param);
 
-    Train a model with training set `Tr' and validation set `Va.' The logloss
-    of the validation set is printed at each iteration.
+    Train a model with training set `Tr' and validation set `Va.' The logloss of the validation set is printed at each
+    iteration.
     
--   ffm_float ffm_cross_validation(
-        struct ffm_problem const *prob, 
-        ffm_int nr_folds, 
-        ffm_parameter param);
+-   ffm_float ffm_cross_validation(struct ffm_problem const *prob, ffm_int nr_folds, ffm_parameter param);
 
     Do cross validation with `nr_folds' folds.
 
 -   ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model);
 
-    Do prediction. `begin' and `end' are pointers to specify the beginning and
-    ending position of the instance to be predicted.
+    Do prediction. `begin' and `end' are pointers to specify the beginning and ending position of the instance to be
+    predicted.
 
 
 
@@ -266,6 +319,7 @@ platform, then please comment out the following lines in Makefile.
     CXXFLAGS += -fopenmp
 
 Note: Please always run `make clean all' if these flags are changed.
+
 
 
 Building Windows Binaries
@@ -293,6 +347,6 @@ Contributors
 
 Yu-Chin Juan, Wei-Sheng Chin, and Yong Zhuang
 
-For any questions, comments, or bug report, please send your email to 
+For questions, comments, feature requests, or bug report, please send your email to 
 
     Yu-Chin (guestwalk@gmail.com)

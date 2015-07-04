@@ -18,17 +18,18 @@ string train_help()
 "usage: ffm-train [options] training_set_file [model_file]\n"
 "\n"
 "options:\n"
-"-l <lambda>: set regularization parameter (default 0)\n"
+"-l <lambda>: set regularization parameter (default 0.00002)\n"
 "-k <factor>: set number of latent factors (default 4)\n"
 "-t <iteration>: set number of iterations (default 15)\n"
-"-r <eta>: set learning rate (default 0.1)\n"
+"-r <eta>: set learning rate (default 0.2)\n"
 "-s <nr_threads>: set number of threads (default 1)\n"
 "-p <path>: set path to the validation set\n"
 "-v <fold>: set the number of folds for cross-validation\n"
 "--quiet: quiet model (no output)\n"
 "--no-norm: disable instance-wise normalization\n"
 "--no-rand: disable random update\n"
-"--on-disk: perform on-disk training (a temporary file <training_set_file>.bin will be generated)\n");
+"--on-disk: perform on-disk training (a temporary file <training_set_file>.bin will be generated)\n"
+"--auto-stop: stop at the iteration that achieves the best validation loss (must be used with -p)\n");
 }
 
 struct Option
@@ -141,6 +142,10 @@ Option parse_option(int argc, char **argv)
         else if(args[i].compare("--on-disk") == 0)
         {
             opt.on_disk = true;
+        }
+        else if(args[i].compare("--auto-stop") == 0)
+        {
+            opt.param.auto_stop = true;
         }
         else
         {

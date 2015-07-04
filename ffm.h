@@ -50,6 +50,7 @@ struct ffm_parameter
     bool quiet;
     bool normalization;
     bool random;
+    bool auto_stop;
 };
 
 ffm_problem* ffm_read_problem(char const *path);

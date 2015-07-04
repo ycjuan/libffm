@@ -17,4 +17,4 @@ ffm.o: ffm.cpp ffm.h
 	$(CXX) $(CXXFLAGS) $(DFLAG) -c -o $@ $<
 
 clean:
-	rm -f ffm-train ffm-predict ffm.o timer.o
+	rm -f ffm-train ffm-predict ffm.o

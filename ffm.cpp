@@ -68,7 +68,7 @@ inline ffm_float wTx(
             ffm_float *w1 = model.W + j1*align1 + f2*align0;
             ffm_float *w2 = model.W + j2*align1 + f1*align0;
 
-            __m128 XMMv = _mm_set1_ps(2.0f*v1*v2*r);
+            __m128 XMMv = _mm_set1_ps(v1*v2*r);
 
             if(do_update)
             {
@@ -252,8 +252,20 @@ shared_ptr<ffm_model> train(
             R_va = vector<ffm_float>(va->l, 1);
     }
 
+    bool auto_stop = param.auto_stop && va != nullptr && va->l != 0;
+
+    ffm_int k_aligned = (ffm_int)ceil((ffm_double)param.k/kALIGN)*kALIGN;
+    ffm_long w_size = (ffm_long)model->n * model->m * k_aligned * 2;
+    vector<ffm_float> prev_W;
+    if(auto_stop)
+        prev_W.assign(w_size, 0);
+    ffm_double best_va_loss = numeric_limits<ffm_double>::max();
+
     if(!param.quiet)
     {
+        if(param.auto_stop && (va == nullptr || va->l == 0))
+            cerr << "warning: ignoring auto-stop because there is no validation set" << endl;
+
         cout.width(4);
         cout << "iter";
         cout.width(13);
@@ -266,7 +278,7 @@ shared_ptr<ffm_model> train(
         cout << endl;
     }
 
-    for(ffm_int iter = 0; iter < param.nr_iters; iter++)
+    for(ffm_int iter = 1; iter <= param.nr_iters; iter++)
     {
         ffm_double tr_loss = 0;
         if(param.random)
@@ -331,6 +343,21 @@ shared_ptr<ffm_model> train(
 
                 cout.width(13);
                 cout << fixed << setprecision(5) << va_loss;
+
+                if(auto_stop)
+                {
+                    if(va_loss > best_va_loss)
+                    {
+                        memcpy(model->W, prev_W.data(), w_size*sizeof(ffm_float));
+                        cout << endl << "Auto-stop. Use model at " << iter-1 << "th iteration." << endl;
+                        break;
+                    }
+                    else
+                    {
+                        memcpy(prev_W.data(), model->W, w_size*sizeof(ffm_float));
+                        best_va_loss = va_loss; 
+                    }
+                }
             }
             cout << endl;
         }
@@ -345,6 +372,7 @@ shared_ptr<ffm_model> train(
     return model;
 }
 
+// TODO: This function will be merged with train().
 shared_ptr<ffm_model> train_on_disk(
     string tr_path,
     string va_path,
@@ -354,20 +382,6 @@ shared_ptr<ffm_model> train_on_disk(
     ffm_int old_nr_threads = omp_get_num_threads();
     omp_set_num_threads(param.nr_threads);
 #endif
-
-    if(!param.quiet)
-    {
-        cout.width(4);
-        cout << "iter";
-        cout.width(13);
-        cout << "tr_logloss";
-        if(!va_path.empty())
-        {
-            cout.width(13);
-            cout << "va_logloss";
-        }
-        cout << endl;
-    }
 
     FILE *f_tr = fopen(tr_path.c_str(), "rb");
     FILE *f_va = nullptr;
@@ -394,7 +408,32 @@ shared_ptr<ffm_model> train_on_disk(
     vector<ffm_node> X;
     X.reserve(max_nnz);
 
-    for(ffm_int iter = 0; iter < param.nr_iters; iter++)
+    bool auto_stop = param.auto_stop && !va_path.empty();
+
+    ffm_int k_aligned = (ffm_int)ceil((ffm_double)param.k/kALIGN)*kALIGN;
+    ffm_long w_size = (ffm_long)model->n * model->m * k_aligned * 2;
+    vector<ffm_float> prev_W;
+    if(auto_stop)
+        prev_W.assign(w_size, 0);
+    ffm_double best_va_loss = numeric_limits<ffm_double>::max();
+
+    if(!param.quiet)
+    {
+        if(param.auto_stop && va_path.empty())
+            cerr << "warning: ignoring auto-stop because there is no validation set" << endl;
+        cout.width(4);
+        cout << "iter";
+        cout.width(13);
+        cout << "tr_logloss";
+        if(!va_path.empty())
+        {
+            cout.width(13);
+            cout << "va_logloss";
+        }
+        cout << endl;
+    }
+
+    for(ffm_int iter = 1; iter <= param.nr_iters; iter++)
     {
         ffm_double tr_loss = 0;
 
@@ -505,8 +544,22 @@ shared_ptr<ffm_model> train_on_disk(
 
                 cout.width(13);
                 cout << fixed << setprecision(5) << va_loss;
-            }
 
+                if(auto_stop)
+                {
+                    if(va_loss > best_va_loss)
+                    {
+                        memcpy(model->W, prev_W.data(), w_size*sizeof(ffm_float));
+                        cout << endl << "Auto-stop. Use model at " << iter-1 << "th iteration." << endl;
+                        break;
+                    }
+                    else
+                    {
+                        memcpy(prev_W.data(), model->W, w_size*sizeof(ffm_float));
+                        best_va_loss = va_loss; 
+                    }
+                }
+            }
             cout << endl;
         }
     }
@@ -789,14 +842,15 @@ ffm_parameter ffm_get_default_param()
 {
     ffm_parameter param;
 
-    param.eta = 0.1;
-    param.lambda = 0;
+    param.eta = 0.2;
+    param.lambda = 0.00002;
     param.nr_iters = 15;
     param.k = 4;
     param.nr_threads = 1;
     param.quiet = false;
     param.normalization = true;
     param.random = true;
+    param.auto_stop = false;
 
     return param;
 }
@@ -886,7 +940,7 @@ ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model)
             ffm_float *w1 = model->W + j1*align1 + f2*align0;
             ffm_float *w2 = model->W + j2*align1 + f1*align0;
 
-            ffm_float v = 2*v1*v2*r;
+            ffm_float v = v1*v2*r;
 
             for(ffm_int d = 0; d < model->k; d++)
                 t += w1[d]*w2[d]*v;
