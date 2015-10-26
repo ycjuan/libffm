@@ -80,7 +80,7 @@ ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model);
 ffm_float ffm_cross_validation(struct ffm_problem *prob, ffm_int nr_folds, struct ffm_parameter param);
 
 #ifdef __cplusplus
-} // namespace mf
+} // namespace ffm
 
 } // extern "C"
 #endif

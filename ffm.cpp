@@ -169,7 +169,7 @@ ffm_model* init_model(ffm_int n, ffm_int m, ffm_parameter param)
         throw;
     }
 
-    ffm_float coef = 0.5/sqrt(param.k);
+    ffm_float coef = 1.0f/sqrt(param.k);
     ffm_float *w = model->W;
 
     default_random_engine generator;
