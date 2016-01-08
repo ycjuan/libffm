@@ -65,8 +65,8 @@ inline ffm_float wTx(
             if(j2 >= model.n || f2 >= model.m)
                 continue;
 
-            ffm_float *w1 = model.W + j1*align1 + f2*align0;
-            ffm_float *w2 = model.W + j2*align1 + f1*align0;
+            ffm_float *w1 = model.W + j1*align1 + f1*align0;
+            ffm_float *w2 = model.W + j2*align1 + f2*align0;
 
             __m128 XMMv = _mm_set1_ps(v1*v2*r);
 
