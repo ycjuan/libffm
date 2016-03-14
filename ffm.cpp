@@ -286,7 +286,7 @@ shared_ptr<ffm_model> train(
 #if defined USEOMP
 #pragma omp parallel for schedule(static) reduction(+: tr_loss)
 #endif
-        for(ffm_int ii = 0; ii < tr->l; ii++)
+        for(ffm_int ii = 0; ii < (ffm_int)order.size(); ii++)
         {
             ffm_int i = order[ii];
 
