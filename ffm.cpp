@@ -278,9 +278,9 @@ shared_ptr<ffm_model> train(
         cout << endl;
     }
 
-    ffm_float epsilon = 1e-15;
-    ffm_float min_expnyt = 1. / (1. - epsilon) - 1.;
-    ffm_float max_expnyt = 1. / epsilon - 1;
+    ffm_double epsilon = 1e-15;
+    ffm_float min_t = log(epsilon / (1. - epsilon));
+    ffm_float max_t = log((1. - epsilon) / epsilon);
     for(ffm_int iter = 1; iter <= param.nr_iters; iter++)
     {
         ffm_double tr_loss = 0;
@@ -302,9 +302,9 @@ shared_ptr<ffm_model> train(
             ffm_float r = R_tr[i];
 
             ffm_float t = wTx(begin, end, r, *model);
+            t = max(min(t, max_t), min_t);
 
             ffm_float expnyt = exp(-y*t);
-            expnyt = max(min(expnyt, max_expnyt), min_expnyt);
 
             tr_loss += log(1+expnyt);
 
@@ -338,9 +338,9 @@ shared_ptr<ffm_model> train(
                     ffm_float r = R_va[i];
 
                     ffm_float t = wTx(begin, end, r, *model);
+                    t = max(min(t, max_t), min_t);
 
                     ffm_float expnyt = exp(-y*t);
-                    expnyt = max(min(expnyt, max_expnyt), min_expnyt);
 
                     va_loss += log(1+expnyt);
                 }
@@ -438,9 +438,9 @@ shared_ptr<ffm_model> train_on_disk(
         cout << endl;
     }
 
-    ffm_float epsilon = 1e-15;
-    ffm_float min_expnyt = 1. / (1. - epsilon) - 1.;
-    ffm_float max_expnyt = 1. / epsilon - 1;
+    ffm_double epsilon = 1e-15;
+    ffm_float min_t = log(epsilon / (1. - epsilon));
+    ffm_float max_t = log((1. - epsilon) / epsilon);
     for(ffm_int iter = 1; iter <= param.nr_iters; iter++)
     {
         ffm_double tr_loss = 0;
@@ -482,9 +482,9 @@ shared_ptr<ffm_model> train_on_disk(
                 ffm_float r = param.normalization? R[i] : 1;
 
                 ffm_float t = wTx(begin, end, r, *model);
+                t = max(min(t, max_t), min_t);
 
                 ffm_float expnyt = exp(-y*t);
-                expnyt = max(min(expnyt, max_expnyt), min_expnyt);
 
                 tr_loss += log(1+expnyt);
 
@@ -543,9 +543,9 @@ shared_ptr<ffm_model> train_on_disk(
                         ffm_float r = param.normalization? R[i] : 1;
 
                         ffm_float t = wTx(begin, end, r, *model);
+                        t = max(min(t, max_t), min_t);
 
                         ffm_float expnyt = exp(-y*t);
-                        expnyt = max(min(expnyt, max_expnyt), min_expnyt);
 
                         va_loss += log(1+expnyt);
                     }
@@ -987,7 +987,7 @@ ffm_float ffm_cross_validation(
         cout << endl;
     }
 
-    ffm_float epsilon = 1e-15;
+    ffm_double epsilon = 1e-15;
     ffm_double loss = 0;
     ffm_int nr_instance_per_fold = prob->l/nr_folds;
     for(ffm_int fold = 0; fold < nr_folds; fold++)
@@ -1017,8 +1017,8 @@ ffm_float ffm_cross_validation(
 
             ffm_node *end = &prob->X[prob->P[i+1]];
 
-            ffm_float y_bar = ffm_predict(begin, end, model.get());
-            ffm_float clipped_y_bar = max(min(y_bar, epsilon), (ffm_float)1. - epsilon);
+            ffm_double y_bar = ffm_predict(begin, end, model.get());
+            ffm_double clipped_y_bar = max(min(y_bar, 1. - epsilon), epsilon);
 
             loss1 -= y==1? log(clipped_y_bar) : log(1-clipped_y_bar);
         }
