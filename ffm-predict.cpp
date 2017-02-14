@@ -59,6 +59,7 @@ void predict(string test_path, string model_path, string output_path)
     ffm_double loss = 0;
     vector<ffm_node> x;
     ffm_int i = 0;
+    ffm_float epsilon = 1e-15;
 
     for(; fgets(line, kMaxLineSize, f_in) != nullptr; i++)
     {
@@ -83,8 +84,9 @@ void predict(string test_path, string model_path, string output_path)
         }
 
         ffm_float y_bar = ffm_predict(x.data(), x.data()+x.size(), model);
+        ffm_float clipped_y_bar = max(min(y_bar, epsilon), (ffm_float)1. - epsilon);
 
-        loss -= y==1? log(y_bar) : log(1-y_bar);
+        loss -= y==1? log(clipped_y_bar) : log(1-clipped_y_bar);
 
         f_out << y_bar << "\n";
     }
