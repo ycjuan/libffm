@@ -279,8 +279,8 @@ shared_ptr<ffm_model> train(
     }
 
     ffm_double epsilon = 1e-15;
-    ffm_float min_t = log(epsilon / (1. - epsilon));
-    ffm_float max_t = log((1. - epsilon) / epsilon);
+    ffm_float min_expnyt = epsilon / (1. - epsilon);
+    ffm_float max_expnyt = (1. - epsilon) / epsilon;
     for(ffm_int iter = 1; iter <= param.nr_iters; iter++)
     {
         ffm_double tr_loss = 0;
@@ -302,9 +302,9 @@ shared_ptr<ffm_model> train(
             ffm_float r = R_tr[i];
 
             ffm_float t = wTx(begin, end, r, *model);
-            t = max(min(t, max_t), min_t);
 
             ffm_float expnyt = exp(-y*t);
+            expnyt = max(min(expnyt, max_expnyt), min_expnyt);
 
             tr_loss += log(1+expnyt);
 
@@ -338,9 +338,9 @@ shared_ptr<ffm_model> train(
                     ffm_float r = R_va[i];
 
                     ffm_float t = wTx(begin, end, r, *model);
-                    t = max(min(t, max_t), min_t);
 
                     ffm_float expnyt = exp(-y*t);
+                    expnyt = max(min(expnyt, max_expnyt), min_expnyt);
 
                     va_loss += log(1+expnyt);
                 }
@@ -439,8 +439,8 @@ shared_ptr<ffm_model> train_on_disk(
     }
 
     ffm_double epsilon = 1e-15;
-    ffm_float min_t = log(epsilon / (1. - epsilon));
-    ffm_float max_t = log((1. - epsilon) / epsilon);
+    ffm_float min_expnyt = epsilon / (1. - epsilon);
+    ffm_float max_expnyt = (1. - epsilon) / epsilon;
     for(ffm_int iter = 1; iter <= param.nr_iters; iter++)
     {
         ffm_double tr_loss = 0;
@@ -482,9 +482,9 @@ shared_ptr<ffm_model> train_on_disk(
                 ffm_float r = param.normalization? R[i] : 1;
 
                 ffm_float t = wTx(begin, end, r, *model);
-                t = max(min(t, max_t), min_t);
 
                 ffm_float expnyt = exp(-y*t);
+                expnyt = max(min(expnyt, max_expnyt), min_expnyt);
 
                 tr_loss += log(1+expnyt);
 
@@ -543,9 +543,9 @@ shared_ptr<ffm_model> train_on_disk(
                         ffm_float r = param.normalization? R[i] : 1;
 
                         ffm_float t = wTx(begin, end, r, *model);
-                        t = max(min(t, max_t), min_t);
 
                         ffm_float expnyt = exp(-y*t);
+                        expnyt = max(min(expnyt, max_expnyt), min_expnyt);
 
                         va_loss += log(1+expnyt);
                     }
