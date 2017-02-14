@@ -1,4 +1,4 @@
-#pragma GCC diagnostic ignored "-Wunused-result" 
+#pragma GCC diagnostic ignored "-Wunused-result"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -34,10 +34,10 @@ inline ffm_float wTx(
     ffm_node *begin,
     ffm_node *end,
     ffm_float r,
-    ffm_model &model, 
-    ffm_float kappa=0, 
-    ffm_float eta=0, 
-    ffm_float lambda=0, 
+    ffm_model &model,
+    ffm_float kappa=0,
+    ffm_float eta=0,
+    ffm_float lambda=0,
     bool do_update=false)
 {
     ffm_long align0 = (ffm_long)model.k*2;
@@ -94,9 +94,9 @@ inline ffm_float wTx(
                     XMMwg1 = _mm_add_ps(XMMwg1, _mm_mul_ps(XMMg1, XMMg1));
                     XMMwg2 = _mm_add_ps(XMMwg2, _mm_mul_ps(XMMg2, XMMg2));
 
-                    XMMw1 = _mm_sub_ps(XMMw1, _mm_mul_ps(XMMeta, 
+                    XMMw1 = _mm_sub_ps(XMMw1, _mm_mul_ps(XMMeta,
                             _mm_mul_ps(_mm_rsqrt_ps(XMMwg1), XMMg1)));
-                    XMMw2 = _mm_sub_ps(XMMw2, _mm_mul_ps(XMMeta, 
+                    XMMw2 = _mm_sub_ps(XMMw2, _mm_mul_ps(XMMeta,
                             _mm_mul_ps(_mm_rsqrt_ps(XMMwg2), XMMg2)));
 
                     _mm_store_ps(w1+d, XMMw1);
@@ -113,7 +113,7 @@ inline ffm_float wTx(
                     __m128  XMMw1 = _mm_load_ps(w1+d);
                     __m128  XMMw2 = _mm_load_ps(w2+d);
 
-                    XMMt = _mm_add_ps(XMMt, 
+                    XMMt = _mm_add_ps(XMMt,
                            _mm_mul_ps(_mm_mul_ps(XMMw1, XMMw2), XMMv));
                 }
             }
@@ -144,7 +144,7 @@ ffm_float* malloc_aligned_float(ffm_long size)
     if(status != 0)
         throw bad_alloc();
 #endif
-    
+
     return (ffm_float*)ptr;
 }
 
@@ -158,7 +158,7 @@ ffm_model* init_model(ffm_int n, ffm_int m, ffm_parameter param)
     model->m = m;
     model->W = nullptr;
     model->normalization = param.normalization;
-    
+
     try
     {
         model->W = malloc_aligned_float((ffm_long)n*m*k_aligned*2);
@@ -224,9 +224,9 @@ vector<ffm_float> normalize(ffm_problem &prob)
 }
 
 shared_ptr<ffm_model> train(
-    ffm_problem *tr, 
-    vector<ffm_int> &order, 
-    ffm_parameter param, 
+    ffm_problem *tr,
+    vector<ffm_int> &order,
+    ffm_parameter param,
     ffm_problem *va=nullptr)
 {
 #if defined USEOMP
@@ -234,7 +234,7 @@ shared_ptr<ffm_model> train(
     omp_set_num_threads(param.nr_threads);
 #endif
 
-    shared_ptr<ffm_model> model = 
+    shared_ptr<ffm_model> model =
         shared_ptr<ffm_model>(init_model(tr->n, tr->m, param),
             [] (ffm_model *ptr) { ffm_destroy_model(&ptr); });
 
@@ -278,6 +278,9 @@ shared_ptr<ffm_model> train(
         cout << endl;
     }
 
+    ffm_double epsilon = 1e-15;
+    ffm_float min_expnyt = epsilon / (1. - epsilon);
+    ffm_float max_expnyt = (1. - epsilon) / epsilon;
     for(ffm_int iter = 1; iter <= param.nr_iters; iter++)
     {
         ffm_double tr_loss = 0;
@@ -291,7 +294,7 @@ shared_ptr<ffm_model> train(
             ffm_int i = order[ii];
 
             ffm_float y = tr->Y[i];
-            
+
             ffm_node *begin = &tr->X[tr->P[i]];
 
             ffm_node *end = &tr->X[tr->P[i+1]];
@@ -301,9 +304,10 @@ shared_ptr<ffm_model> train(
             ffm_float t = wTx(begin, end, r, *model);
 
             ffm_float expnyt = exp(-y*t);
+            expnyt = max(min(expnyt, max_expnyt), min_expnyt);
 
             tr_loss += log(1+expnyt);
-               
+
             ffm_float kappa = -y*expnyt/(1+expnyt);
 
             wTx(begin, end, r, *model, kappa, param.eta, param.lambda, true);
@@ -334,8 +338,9 @@ shared_ptr<ffm_model> train(
                     ffm_float r = R_va[i];
 
                     ffm_float t = wTx(begin, end, r, *model);
-                    
+
                     ffm_float expnyt = exp(-y*t);
+                    expnyt = max(min(expnyt, max_expnyt), min_expnyt);
 
                     va_loss += log(1+expnyt);
                 }
@@ -355,7 +360,7 @@ shared_ptr<ffm_model> train(
                     else
                     {
                         memcpy(prev_W.data(), model->W, w_size*sizeof(ffm_float));
-                        best_va_loss = va_loss; 
+                        best_va_loss = va_loss;
                     }
                 }
             }
@@ -395,7 +400,7 @@ shared_ptr<ffm_model> train_on_disk(
     fread(&max_l, sizeof(ffm_int), 1, f_tr);
     fread(&max_nnz, sizeof(ffm_long), 1, f_tr);
 
-    shared_ptr<ffm_model> model = 
+    shared_ptr<ffm_model> model =
         shared_ptr<ffm_model>(init_model(n, m, param),
             [] (ffm_model *ptr) { ffm_destroy_model(&ptr); });
 
@@ -433,6 +438,9 @@ shared_ptr<ffm_model> train_on_disk(
         cout << endl;
     }
 
+    ffm_double epsilon = 1e-15;
+    ffm_float min_expnyt = epsilon / (1. - epsilon);
+    ffm_float max_expnyt = (1. - epsilon) / epsilon;
     for(ffm_int iter = 1; iter <= param.nr_iters; iter++)
     {
         ffm_double tr_loss = 0;
@@ -466,7 +474,7 @@ shared_ptr<ffm_model> train_on_disk(
             for(ffm_int i = 0; i < l; i++)
             {
                 ffm_float y = Y[i];
-                
+
                 ffm_node *begin = &X[P[i]];
 
                 ffm_node *end = &X[P[i+1]];
@@ -476,9 +484,10 @@ shared_ptr<ffm_model> train_on_disk(
                 ffm_float t = wTx(begin, end, r, *model);
 
                 ffm_float expnyt = exp(-y*t);
+                expnyt = max(min(expnyt, max_expnyt), min_expnyt);
 
                 tr_loss += log(1+expnyt);
-                   
+
                 ffm_float kappa = -y*expnyt/(1+expnyt);
 
                 wTx(begin, end, r, *model, kappa, param.eta, param.lambda, true);
@@ -526,7 +535,7 @@ shared_ptr<ffm_model> train_on_disk(
                     for(ffm_int i = 0; i < l; i++)
                     {
                         ffm_float y = Y[i];
-                        
+
                         ffm_node *begin = &X[P[i]];
 
                         ffm_node *end = &X[P[i+1]];
@@ -536,6 +545,7 @@ shared_ptr<ffm_model> train_on_disk(
                         ffm_float t = wTx(begin, end, r, *model);
 
                         ffm_float expnyt = exp(-y*t);
+                        expnyt = max(min(expnyt, max_expnyt), min_expnyt);
 
                         va_loss += log(1+expnyt);
                     }
@@ -556,7 +566,7 @@ shared_ptr<ffm_model> train_on_disk(
                     else
                     {
                         memcpy(prev_W.data(), model->W, w_size*sizeof(ffm_float));
-                        best_va_loss = va_loss; 
+                        best_va_loss = va_loss;
                     }
                 }
             }
@@ -637,7 +647,7 @@ ffm_problem* ffm_read_problem(char const *path)
 
             prob->m = max(prob->m, field+1);
             prob->n = max(prob->n, idx+1);
-            
+
             prob->X[p].f = field;
             prob->X[p].j = idx;
             prob->X[p].v = value;
@@ -733,10 +743,10 @@ int ffm_read_problem_to_disk(char const *txt_path, char const *bin_path)
         P.push_back(p);
 
         if(X.size() > (size_t)kCHUNK_SIZE)
-            write_chunk(); 
+            write_chunk();
     }
-    write_chunk(); 
-    write_chunk(); 
+    write_chunk();
+    write_chunk();
 
     rewind(f_bin);
     fwrite(&m, sizeof(ffm_int), 1, f_bin);
@@ -798,7 +808,7 @@ ffm_model* ffm_load_model(char const *path)
     ffm_model *model = new ffm_model;
     model->W = nullptr;
 
-    f_in >> dummy >> model->n >> dummy >> model->m >> dummy >> model->k 
+    f_in >> dummy >> model->n >> dummy >> model->m >> dummy >> model->k
          >> dummy >> model->normalization;
 
     try
@@ -913,7 +923,7 @@ ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model)
     {
         r = 0;
         for(ffm_node *N = begin; N != end; N++)
-            r += N->v*N->v; 
+            r += N->v*N->v;
         r = 1/r;
     }
 
@@ -951,7 +961,7 @@ ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model *model)
 }
 
 ffm_float ffm_cross_validation(
-    ffm_problem *prob, 
+    ffm_problem *prob,
     ffm_int nr_folds,
     ffm_parameter param)
 {
@@ -977,6 +987,7 @@ ffm_float ffm_cross_validation(
         cout << endl;
     }
 
+    ffm_double epsilon = 1e-15;
     ffm_double loss = 0;
     ffm_int nr_instance_per_fold = prob->l/nr_folds;
     for(ffm_int fold = 0; fold < nr_folds; fold++)
@@ -1001,14 +1012,15 @@ ffm_float ffm_cross_validation(
             ffm_int i = order[ii];
 
             ffm_float y = prob->Y[i];
-            
+
             ffm_node *begin = &prob->X[prob->P[i]];
 
             ffm_node *end = &prob->X[prob->P[i+1]];
 
-            ffm_float y_bar = ffm_predict(begin, end, model.get());
+            ffm_double y_bar = ffm_predict(begin, end, model.get());
+            ffm_double clipped_y_bar = max(min(y_bar, 1. - epsilon), epsilon);
 
-            loss1 -= y==1? log(y_bar) : log(1-y_bar);
+            loss1 -= y==1? log(clipped_y_bar) : log(1-clipped_y_bar);
         }
         loss += loss1;
 
