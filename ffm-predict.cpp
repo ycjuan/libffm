@@ -86,6 +86,8 @@ void predict(string test_path, string model_path, string output_path) {
     loss /= i;
 
     cout << "logloss = " << fixed << setprecision(5) << loss << endl;
+
+    fclose(f_in);
 }
 
 int main(int argc, char **argv) {
