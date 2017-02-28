@@ -93,6 +93,8 @@ void predict(string test_path, string model_path, string output_path)
 
     cout << "logloss = " << fixed << setprecision(5) << loss << endl;
 
+    fclose(f_in);
+    
     ffm_destroy_model(&model);
 
 }
