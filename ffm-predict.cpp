@@ -14,19 +14,16 @@
 using namespace std;
 using namespace ffm;
 
-struct Option
-{
+struct Option {
     string test_path, model_path, output_path;
 };
 
-string predict_help()
-{
+string predict_help() {
     return string(
 "usage: ffm-predict test_file model_file output_file\n");
 }
 
-Option parse_option(int argc, char **argv)
-{
+Option parse_option(int argc, char **argv) {
     vector<string> args;
     for(int i = 0; i < argc; i++)
         args.push_back(string(argv[i]));
@@ -46,28 +43,25 @@ Option parse_option(int argc, char **argv)
     return option;
 }
 
-void predict(string test_path, string model_path, string output_path)
-{
+void predict(string test_path, string model_path, string output_path) {
     int const kMaxLineSize = 1000000;
 
     FILE *f_in = fopen(test_path.c_str(), "r");
     ofstream f_out(output_path);
     char line[kMaxLineSize];
 
-    ffm_model *model = ffm_load_model(model_path.c_str());
+    ffm_model model = ffm_load_model(model_path);
 
     ffm_double loss = 0;
     vector<ffm_node> x;
     ffm_int i = 0;
 
-    for(; fgets(line, kMaxLineSize, f_in) != nullptr; i++)
-    {
+    for(; fgets(line, kMaxLineSize, f_in) != nullptr; i++) {
         x.clear();
         char *y_char = strtok(line, " \t");
         ffm_float y = (atoi(y_char)>0)? 1.0f : -1.0f;
 
-        while(true)
-        {
+        while(true) {
             char *field_char = strtok(nullptr,":");
             char *idx_char = strtok(nullptr,":");
             char *value_char = strtok(nullptr," \t");
@@ -92,23 +86,18 @@ void predict(string test_path, string model_path, string output_path)
     loss /= i;
 
     cout << "logloss = " << fixed << setprecision(5) << loss << endl;
-
-    ffm_destroy_model(&model);
-
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     Option option;
-    try
-    {
+    try {
         option = parse_option(argc, argv);
-    }
-    catch(invalid_argument const &e)
-    {
+    } catch(invalid_argument const &e) {
         cout << e.what() << endl;
         return 1;
     }
 
     predict(option.test_path, option.model_path, option.output_path);
+
+    return 0;
 }
