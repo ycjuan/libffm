@@ -249,7 +249,7 @@ Building Windows Binaries
 
 The Windows part is maintained by different maintainer, so it may not always support the latest version.
 
-The latest version it supports is: v1.14
+The latest version it supports is: v1.21
 
 To build them via command-line tools of Visual C++, use the following steps:
 

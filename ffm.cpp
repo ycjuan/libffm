@@ -363,7 +363,7 @@ uint64_t hashfile(string txt_path, bool one_block=false)
 
     ffm_long end = (ffm_long) f.tellg();
     f.seekg(0, ios::beg);
-    assert(f.tellg() == 0);
+    assert(static_cast<int>(f.tellg()) == 0);
 
     uint64_t magic = 90359;
     for(ffm_long pos = 0; pos < end; ) {
@@ -499,10 +499,14 @@ bool check_same_txt_bin(string txt_path, string bin_path) {
 
 ffm_model::~ffm_model() {
     if(W != nullptr) {
-#ifdef _WIN32
-        _aligned_free(W);
-#else
+#ifndef USESSE
         free(W);
+#else
+    #ifdef _WIN32
+        _aligned_free(W);
+    #else
+        free(W);
+    #endif
 #endif
         W = nullptr;
     }
