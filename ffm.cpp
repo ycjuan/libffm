@@ -587,11 +587,11 @@ ffm_model ffm_train_on_disk(string tr_path, string va_path, ffm_parameter param)
 
                 ffm_float r = param.normalization? prob.R[i] : 1;
 
-                ffm_float t = wTx(begin, end, r, model);
+                ffm_double t = wTx(begin, end, r, model);
 
-                ffm_float expnyt = exp(-y*t);
+                ffm_double expnyt = exp(-y*t);
 
-                loss += log(1+expnyt);
+                loss += log1p(expnyt);
 
                 if(do_update) {
                    
