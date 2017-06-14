@@ -589,13 +589,13 @@ ffm_model ffm_train_on_disk(string tr_path, string va_path, ffm_parameter param)
 
                 ffm_double t = wTx(begin, end, r, model);
 
-                ffm_double expnyt = exp(-y*t);
+                ffm_double e = y - t;
 
-                loss += log1p(expnyt);
+                loss += e * e;
 
                 if(do_update) {
                    
-                    ffm_float kappa = -y*expnyt/(1+expnyt);
+                    ffm_float kappa = -e;
 
                     wTx(begin, end, r, model, kappa, param.eta, param.lambda, true);
                 }
@@ -693,7 +693,7 @@ ffm_float ffm_predict(ffm_node *begin, ffm_node *end, ffm_model &model) {
 
     ffm_float t = wTx(begin, end, r, model);
 
-    return 1/(1+exp(-t));
+    return t;
 }
 
 } // namespace ffm
