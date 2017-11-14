@@ -27,7 +27,7 @@ string train_help() {
 "-r <eta>: set learning rate (default 0.2)\n"
 "-s <nr_threads>: set number of threads (default 1)\n"
 "-p <path>: set path to the validation set\n"
-"--quiet: quiet model (no output)\n"
+"--quiet: quiet mode (no output)\n"
 "--no-norm: disable instance-wise normalization\n"
 "--auto-stop: stop at the iteration that achieves the best validation loss (must be used with -p)\n");
 }

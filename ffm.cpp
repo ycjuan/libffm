@@ -106,8 +106,8 @@ inline ffm_float wTx(
             if(j2 >= model.n || f2 >= model.m)
                 continue;
 
-            ffm_float *w1_base = model.W + j1*align1 + f2*align0;
-            ffm_float *w2_base = model.W + j2*align1 + f1*align0;
+            ffm_float *w1_base = model.W + (ffm_long)j1*align1 + f2*align0;
+            ffm_float *w2_base = model.W + (ffm_long)j2*align1 + f1*align0;
 
             __m128 XMMv = _mm_set1_ps(v1*v2*r);
 
@@ -206,8 +206,8 @@ inline ffm_float wTx(
             if(j2 >= model.n || f2 >= model.m)
                 continue;
 
-            ffm_float *w1 = model.W + j1*align1 + f2*align0;
-            ffm_float *w2 = model.W + j2*align1 + f1*align0;
+            ffm_float *w1 = model.W + (ffm_long)j1*align1 + f2*align0;
+            ffm_float *w2 = model.W + (ffm_long)j2*align1 + f1*align0;
 
             ffm_float v = v1 * v2 * r;
 
@@ -516,7 +516,7 @@ void ffm_read_problem_to_disk(string txt_path, string bin_path) {
 
     Timer timer;
     
-    cout << "First check if the text file has already converted to binary format " << flush;
+    cout << "First check if the text file has already been converted to binary format " << flush;
     bool same_file = check_same_txt_bin(txt_path, bin_path);
     cout << "(" << fixed << setprecision(1) << timer.toc() << " seconds)" << endl;
 
