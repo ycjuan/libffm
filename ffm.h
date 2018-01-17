@@ -24,7 +24,8 @@ struct ffm_model {
     ffm_int k; // number of latent factors
     ffm_float *W = nullptr;
     bool normalization;
-    ~ffm_model();
+    //~ffm_model();
+    void release();
 };
 
 struct ffm_parameter {
@@ -41,6 +42,8 @@ void ffm_read_problem_to_disk(string txt_path, string bin_path);
 void ffm_save_model(ffm_model &model, string path);
 
 ffm_model ffm_load_model(string path);
+
+ffm_model* ffm_load_model_ptr(string path);
 
 ffm_model ffm_train_on_disk(string Tr_path, string Va_path, ffm_parameter param);
 
