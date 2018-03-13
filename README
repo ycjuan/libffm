@@ -101,11 +101,13 @@ Requirement: It requires a C++11 compatible compiler. We also use OpenMP to prov
 available on your platform, please refer to section `OpenMP and SSE.'
 
 - Unix-like systems:
-  Typeype `make' in the command line.
+  Type `make' in the command line.
 
 - Windows:
   See `Building Windows Binaries' to compile.
 
+- macOS:
+  See `Building macOS Binaries' to compile.
 
 
 Data Format
@@ -264,6 +266,18 @@ where it is installed.
 2. Type
 
 nmake -f Makefile.win clean all
+
+
+Building macOS Binaries
+=======================
+
+1. Install llvm using Homebrew
+
+  > brew install llvm
+
+2. Type
+
+  > make -f Makefile.mac clean all
 
 
 FAQ
