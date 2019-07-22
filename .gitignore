@@ -1,0 +1,11 @@
+*.o
+*.bin
+*.model
+*.dSYM/
+
+ffm-predict
+ffm-train
+
+build/
+data/
+model/
