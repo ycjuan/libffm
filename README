@@ -240,6 +240,21 @@ please run make with following arguments:
 
     make USESSE=OFF
 
+Building macOS Binaries
+=======================
+
+Apple clang (use libomp)
+
+    brew install libomp
+    make OMP_CXXFLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" OMP_LDFLAGS="-L$(brew --prefix libomp)/lib -lomp"
+
+Using gcc (installed by homebrew)
+
+    brew install gcc
+    make CXX="g++-8"
+
+Note: replace "8" with version of gcc installed on your machine
+
 
 Building Windows Binaries
 =========================
