@@ -229,19 +229,16 @@ OpenMP and SSE
 ==============
 
 We use OpenMP to do parallelization. If OpenMP is not available on your
-platform, then please comment out the following lines in Makefile.
+platform, then please run make with following arguments.
 
-    DFLAG += -DUSEOMP
-    CXXFLAGS += -fopenmp
+    make USEOMP=OFF
 
 Note: Please run `make clean all' if these flags are changed.
 
-We use SSE instructions to perform fast computation. If you do not want to use it, comment out the following line:
+We use SSE instructions to perform fast computation. If you do not want to use it,
+please run make with following arguments:
 
-    DFLAG += -DUSESSE
-
-Then, run `make clean all'
-
+    make USESSE=OFF
 
 
 Building Windows Binaries

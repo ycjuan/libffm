@@ -1,20 +1,23 @@
 CXX = g++
 CXXFLAGS = -Wall -O3 -std=c++0x -march=native
 
-# comment the following flags if you do not want to SSE instructions
-DFLAG += -DUSESSE
+ifneq ($(USESSE), OFF)
+	DFLAG += -DUSESSE
+endif
 
-# comment the following flags if you do not want to use OpenMP
-DFLAG += -DUSEOMP
-CXXFLAGS += -fopenmp
+ifneq ($(USEOMP), OFF)
+	DFLAG += -DUSEOMP
+	OMP_CXXFLAGS ?= -fopenmp
+	CXXFLAGS += $(OMP_CXXFLAGS)
+endif
 
 all: ffm-train ffm-predict
 
 ffm-train: ffm-train.cpp ffm.o timer.o
-	$(CXX) $(CXXFLAGS) $(DFLAG) -o $@ $^
+	$(CXX) $(CXXFLAGS) $(DFLAG) $(OMP_LDFLAGS) -o $@ $^
 
 ffm-predict: ffm-predict.cpp ffm.o timer.o
-	$(CXX) $(CXXFLAGS) $(DFLAG) -o $@ $^
+	$(CXX) $(CXXFLAGS) $(DFLAG) $(OMP_LDFLAGS) -o $@ $^
 
 ffm.o: ffm.cpp ffm.h timer.o
 	$(CXX) $(CXXFLAGS) $(DFLAG) -c -o $@ $<
