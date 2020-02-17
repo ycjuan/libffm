@@ -192,9 +192,9 @@ Examples
 
 Download a toy data from:
 
-    zip: https://www.csie.ntu.edu.tw/~f01922139/libffm_data/libffm_toy.zip
+    zip: https://drive.google.com/open?id=1HZX7zSQJy26hY4_PxSlOWz4x7O-tbQjt
 
-    tar.gz: https://www.csie.ntu.edu.tw/~f01922139/libffm_data/libffm_toy.tar.gz
+    tar.gz: https://drive.google.com/open?id=12-EczjiYGyJRQLH5ARy1MXRFbCvkgfPx
 
 This dataset is subsampled 1% from Criteo's challenge.
 
