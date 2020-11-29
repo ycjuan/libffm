@@ -34,6 +34,10 @@ v: Value of each element in the problem
 #include <cassert>
 #include <numeric>
 
+#if defined __SSE3__
+#define USESSE 1
+#endif
+
 #if defined USESSE
 #include <pmmintrin.h>
 #endif
