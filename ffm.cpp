@@ -565,13 +565,23 @@ ffm_model ffm_train_on_disk(string tr_path, string va_path, ffm_parameter param)
 
         vector<ffm_int> outer_order(prob.meta.num_blocks);
         iota(outer_order.begin(), outer_order.end(), 0);
+        #if __cplusplus >= 201703L
+        std::random_device rd;
+        std::mt19937 g(rd());
+        std::shuffle(outer_order.begin(), outer_order.end(), g);
+        #else
         random_shuffle(outer_order.begin(), outer_order.end());
+        #endif
         for(auto blk : outer_order) {
             ffm_int l = prob.load_block(blk);
 
             vector<ffm_int> inner_order(l);
             iota(inner_order.begin(), inner_order.end(), 0);
+            #if __cplusplus >= 201703L
+            std::shuffle(inner_order.begin(), inner_order.end(), g);
+            #else
             random_shuffle(inner_order.begin(), inner_order.end());
+            #endif
 
 #if defined USEOMP
 #pragma omp parallel for schedule(static) reduction(+: loss)
