@@ -34,6 +34,7 @@ struct ffm_parameter {
     ffm_int k = 4; // number of latent factors
     bool normalization = true;
     bool auto_stop = false;
+    ffm_int nr_patience_iters = 1;
 };
 
 void ffm_read_problem_to_disk(string txt_path, string bin_path);

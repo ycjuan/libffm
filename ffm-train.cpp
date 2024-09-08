@@ -24,6 +24,7 @@ string train_help() {
 "-l <lambda>: set regularization parameter (default 0.00002)\n"
 "-k <factor>: set number of latent factors (default 4)\n"
 "-t <iteration>: set number of iterations (default 15)\n"
+"-b <patience>: set number of iterations for patience (default 1)\n"
 "-r <eta>: set learning rate (default 0.2)\n"
 "-s <nr_threads>: set number of threads (default 1)\n"
 "-p <path>: set path to the validation set\n"
@@ -70,6 +71,14 @@ Option parse_option(int argc, char **argv) {
             opt.param.nr_iters = atoi(args[i].c_str());
             if(opt.param.nr_iters <= 0)
                 throw invalid_argument("number of iterations should be greater than zero");
+        } else if(args[i].compare("-b") == 0)
+        {
+            if(i == argc-1)
+                throw invalid_argument("need to specify number of iterations after -b");
+            i++;
+            opt.param.nr_patience_iters = atoi(args[i].c_str());
+            if(opt.param.nr_patience_iters <= 0)
+                throw invalid_argument("number of iterations for patience should be greater than zero");
         } else if(args[i].compare("-k") == 0) {
             if(i == argc-1)
                 throw invalid_argument("need to specify number of factors after -k");

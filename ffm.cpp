@@ -537,6 +537,7 @@ ffm_model ffm_train_on_disk(string tr_path, string va_path, ffm_parameter param)
     ffm_model model = init_model(tr.meta.n, tr.meta.m, param);
 
     bool auto_stop = param.auto_stop && !va_path.empty();
+    ffm_int patience = 0;
 
     ffm_long w_size = get_w_size(model);
     vector<ffm_float> prev_W(w_size, 0);
@@ -623,10 +624,14 @@ ffm_model ffm_train_on_disk(string tr_path, string va_path, ffm_parameter param)
 
             if(auto_stop) {
                 if(va_loss > best_va_loss) {
-                    memcpy(model.W, prev_W.data(), w_size*sizeof(ffm_float));
-                    cout << endl << "Auto-stop. Use model at " << iter-1 << "th iteration." << endl;
-                    break;
+                    patience++;
+                    if (patience == param.nr_patience_iters) {
+                        memcpy(model.W, prev_W.data(), w_size*sizeof(ffm_float));
+                        cout << endl << "Auto-stop. Use model at " << (iter - patience) << "th iteration." << endl;
+                        break;
+                    }
                 } else {
+                    patience = 0;
                     memcpy(prev_W.data(), model.W, w_size*sizeof(ffm_float));
                     best_va_loss = va_loss; 
                 }
